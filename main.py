@@ -5,17 +5,28 @@ from models import ChatInput, ChatOutput, MessageAnalysis
 from utils import preprocess_chat, analyze_chat
 import uvicorn
 
-app = FastAPI(title="Influence Detector - Mock Backend")
+# Initialize FastAPI app
+app = FastAPI(
+    title="Influence Detector - Mock Backend",
+    description="Backend API for detecting manipulation or influence in chat text.",
+    version="1.0.0",
+)
 
-# CORS (for Flutter / local dev). In production, restrict origins.
+# CORS (important for Flutter and local dev)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: in production, set specific origins
+    allow_origins=["*"],  # TODO: restrict to your app domain in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Health check endpoint (for Render, monitoring, debugging)
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+# Main chat analysis endpoint
 @app.post("/analyze", response_model=ChatOutput)
 async def analyze(chat_input: ChatInput):
     chat_text = chat_input.chat
@@ -25,7 +36,7 @@ async def analyze(chat_input: ChatInput):
     # Preprocess into messages
     messages = preprocess_chat(chat_text)
 
-    # Analyze
+    # Run analysis
     result = analyze_chat(messages)
 
     # Convert dicts to Pydantic models for response validation
@@ -40,8 +51,12 @@ async def analyze(chat_input: ChatInput):
         )
         messages_out.append(ma)
 
-    return ChatOutput(messages=messages_out, influence_score=result["influence_score"])
+    return ChatOutput(
+        messages=messages_out,
+        influence_score=result["influence_score"]
+    )
 
-
+# Run the app (only used in local dev, Render ignores this and uses your Start Command)
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
