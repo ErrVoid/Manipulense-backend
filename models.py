@@ -18,3 +18,4 @@ class MessageAnalysis(BaseModel):
 class ChatOutput(BaseModel):
     messages: List[MessageAnalysis]
     influence_score: float
+
